@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head th:include="global :: head('注册')"></head>
+<body>
+<div class="container">
+    <div class="row" th:include="global :: navigation"></div>
+
+    <div class="col-sm-offset-2 col-sm-8" th:include="global :: personForm('注册')"></div>
+</div>
+
+<div th:include="global :: globalJs"></div>
+<script>
+    var personFormVue =createPersonFormVue(signUp);
+</script>
+</body>
+</html>
