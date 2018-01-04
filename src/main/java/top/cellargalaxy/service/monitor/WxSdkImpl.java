@@ -66,7 +66,7 @@ public class WxSdkImpl implements WxSdk {
 					for (Map.Entry<String, Equipment> equipmentEntry : build.getCons().entrySet()) {
 						equipment = equipmentEntry.getValue();
 					}
-					info += "通 " + equipment.getBuild() + "-" + equipment.getFloor() + "-" + equipment.getModel() + "-" + equipment.getNumber() + " " + equipment.getIp() + "\n";
+					info += "通 " + equipment.getFullName() + " " + equipment.getIp() + "\n";
 				} else if (build.getCons().size() > 1) {
 					info += "通 " + build.getName() + "：" + build.getCons().size() + "台\n";
 				}
@@ -75,7 +75,7 @@ public class WxSdkImpl implements WxSdk {
 					for (Map.Entry<String, Equipment> equipmentEntry : build.getNotCons().entrySet()) {
 						equipment = equipmentEntry.getValue();
 					}
-					info += "挂 " + equipment.getBuild() + "-" + equipment.getFloor() + "-" + equipment.getModel() + "-" + +equipment.getNumber() + " " + equipment.getIp() + "\n";
+					info += "挂 " + equipment.getFullName() + " " + equipment.getIp() + "\n";
 				} else if (build.getNotCons().size() > 1) {
 					info += "挂 " + build.getName() + "：" + build.getNotCons().size() + "台\n";
 				}
@@ -129,11 +129,6 @@ public class WxSdkImpl implements WxSdk {
 			} else {
 				notCons.put(equipment.getId(), equipment);
 			}
-		}
-		
-		public synchronized void clearEquipment() {
-			cons.clear();
-			notCons.clear();
 		}
 		
 		public String getName() {

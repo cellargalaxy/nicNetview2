@@ -27,9 +27,9 @@ import javax.sql.DataSource;
 @MapperScan(basePackages = "top.cellargalaxy.dao.monitor", sqlSessionTemplateRef = "monitorSqlSessionTemplate")
 public class MonitorDataSourceConfig {
 	
+	@Primary
 	@Bean(name = "monitorDataSource")
 	@ConfigurationProperties(prefix = "spring.datasource.monitor")
-	@Primary
 	public DataSource monitorDataSource() {
 		return DataSourceBuilder.create().build();
 	}

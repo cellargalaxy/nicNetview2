@@ -1,4 +1,0 @@
-id,name,sex,college,grade,professionClass,phone,cornet,qq,birthday,introduction,team,password
-"学号(字符串)",名字(字符串),性别(字符串),学院(字符串),年级(数字),专业班级(字符串),手机(字符串),短号(字符串),qq(字符串),生日(yyyy/MM/dd),简介(字符串),组别(字符串),密码(字符串)
-123456,root,男,没有学院,15,没有班级,13612341234,,0123456789,2018/01/01,,,8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
-nic,nic,男,没有学院,15,没有班级,13643214321,,9876543210,2018/01/01,,,ddde17afcb42044ac2f724f349edc8a84997365d41aeac4e54dcc7c55cd474ce
