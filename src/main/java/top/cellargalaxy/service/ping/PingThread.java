@@ -60,7 +60,7 @@ public class PingThread {
 		return null;
 	}
 	
-	@Scheduled(fixedDelay = 5000)
+	@Scheduled(fixedDelay = 5 * 1000)
 	public void run() {
 		if (pingDeal == null) {
 			pingDeal = pingDealFactory.getPingDeal();

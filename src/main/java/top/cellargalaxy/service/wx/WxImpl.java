@@ -24,6 +24,7 @@ public class WxImpl implements Wx {
 	@Autowired
 	private WxConfiguration wxConfiguration;
 	private volatile String accessToken;
+	private final int timeout = 5000;
 	
 	
 	@Override
@@ -72,7 +73,7 @@ public class WxImpl implements Wx {
 			if (httpGet == null) {
 				return null;
 			}
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet, timeout);
 			if (result == null) {
 				return null;
 			}
@@ -101,7 +102,7 @@ public class WxImpl implements Wx {
 			stringEntity.setContentEncoding("utf-8");
 			stringEntity.setContentType("application/json");
 			httpPost.setEntity(stringEntity);
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpPost);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpPost, timeout);
 			if (result == null) {
 				return null;
 			}
@@ -127,7 +128,7 @@ public class WxImpl implements Wx {
 			if (httpGet == null) {
 				return;
 			}
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet, timeout);
 			if (result == null) {
 				return;
 			}

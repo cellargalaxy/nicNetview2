@@ -16,9 +16,6 @@ public interface MalfunctionMapper {
 			"equipmentId=#{equipmentId} and malfunctionDatetime=#{malfunctionDatetime}")
 	int deleteMalfunction(Malfunction malfunction);
 	
-	@Delete("delete from malfunction where equipmentId=#{equipmentId}")
-	int deleteMalfunctionByEquipmentId(String equipmentId);
-	
 	@Select("select * from malfunction order by malfunctionDatetime desc limit #{off},#{len}")
 	Malfunction[] selectMalfunctions(@Param("off") int off, @Param("len") int len);
 	

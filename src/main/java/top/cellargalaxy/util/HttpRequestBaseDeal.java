@@ -67,9 +67,9 @@ public class HttpRequestBaseDeal {
 		return null;
 	}
 	
-	public static final String executeHttpRequestBase(HttpRequestBase httpRequestBase) {
+	public static final String executeHttpRequestBase(HttpRequestBase httpRequestBase,int timeout) {
 		try {
-			RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(5000).setConnectTimeout(5000).build();
+			RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(timeout).setConnectTimeout(timeout).build();
 			httpRequestBase.setConfig(requestConfig);
 			HttpResponse httpResponse = httpClient.execute(httpRequestBase);
 			if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {

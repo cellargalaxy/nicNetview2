@@ -84,7 +84,7 @@ public class WxSdkImpl implements WxSdk {
 		return info;
 	}
 	
-	@Scheduled(fixedRate = 1000 * 30)
+	@Scheduled(fixedDelay = 1000 * 30)
 	public void send() {
 		try {
 			String info = createInfo();
@@ -97,7 +97,7 @@ public class WxSdkImpl implements WxSdk {
 			HttpPost httpPost = new HttpPost(monitorConfiguration.getWxUrl());
 			UrlEncodedFormEntity urlEncodedFormEntity = new UrlEncodedFormEntity(params, "UTF-8");
 			httpPost.setEntity(urlEncodedFormEntity);
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpPost);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpPost, 10000);
 			if (result == null) {
 				return;
 			}

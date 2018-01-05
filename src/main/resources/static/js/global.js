@@ -104,6 +104,10 @@ function signUp(id, name, sex, college, grade, professionClass, phone, cornet, q
         alert("写一下生日呢");
         return;
     }
+    if (introduction!=null&&introduction.length>255){
+        alert("简介太长了，不超过255个字符");
+        return;
+    }
     if (password == null || password == '' || pw == null || pw == '') {
         alert("密码怎么可以为空");
         return;

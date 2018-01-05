@@ -19,6 +19,7 @@ import java.util.List;
 public class PersonelSdkImpl implements PersonelSdk {
 	@Autowired
 	private MonitorConfiguration monitorConfiguration;
+	private final int timeout = 5000;
 	
 	@Override
 	public boolean checkPassword(String id, String password) {
@@ -28,7 +29,7 @@ public class PersonelSdkImpl implements PersonelSdk {
 			params.add(new BasicNameValuePair("id", id));
 			params.add(new BasicNameValuePair("password", password));
 			HttpGet httpGet = HttpRequestBaseDeal.createHttpGet(monitorConfiguration.getInquirePersonPasswordUrl(), params);
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet, timeout);
 			if (result == null) {
 				return false;
 			}
@@ -48,7 +49,7 @@ public class PersonelSdkImpl implements PersonelSdk {
 			params.add(new BasicNameValuePair("personId", id));
 			params.add(new BasicNameValuePair("permission", "-1"));
 			HttpGet httpGet = HttpRequestBaseDeal.createHttpGet(monitorConfiguration.getInquireExistAuthorizedUrl(), params);
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet, timeout);
 			if (result == null) {
 				return false;
 			}
@@ -68,7 +69,7 @@ public class PersonelSdkImpl implements PersonelSdk {
 			params.add(new BasicNameValuePair("personId", id));
 			params.add(new BasicNameValuePair("permission", "11"));
 			HttpGet httpGet = HttpRequestBaseDeal.createHttpGet(monitorConfiguration.getInquireExistAuthorizedUrl(), params);
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet, timeout);
 			if (result == null) {
 				return false;
 			}
@@ -88,7 +89,7 @@ public class PersonelSdkImpl implements PersonelSdk {
 			params.add(new BasicNameValuePair("personId", id));
 			params.add(new BasicNameValuePair("permission", "10"));
 			HttpGet httpGet = HttpRequestBaseDeal.createHttpGet(monitorConfiguration.getInquireExistAuthorizedUrl(), params);
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpGet, timeout);
 			if (result == null) {
 				return false;
 			}
