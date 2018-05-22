@@ -17,7 +17,6 @@ import top.cellargalaxy.dao.personnel.PersonMapper;
 import top.cellargalaxy.util.CsvDeal;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -35,15 +34,18 @@ public class PersonnelServiceImpl implements PersonnelService {
 	private AuthorizedMapper authorizedMapper;
 	@Autowired
 	private PermissionMapper permissionMapper;
-	@Autowired
-	private PersonneConfiguration personneConfiguration;
-	
+
+	private final String token;
+	private final int listPersonLength;
+
 	private volatile int personPageCount;
-	
-	public PersonnelServiceImpl() {
+
+	public PersonnelServiceImpl(PersonneConfiguration personneConfiguration) {
+		token = personneConfiguration.getToken();
+		listPersonLength = personneConfiguration.getListPersonLength();
 		personPageCount = -1;
 	}
-	
+
 	@Override
 	public boolean addPerson(Person person) {
 		try {
@@ -51,20 +53,22 @@ public class PersonnelServiceImpl implements PersonnelService {
 				return false;
 			}
 			person.setPassword(DigestUtils.sha256Hex(person.getPassword()));
-			personPageCount = -1;
 			if (person.getTeam() != null && person.getTeam().length() == 0) {
 				person.setTeam(null);
 			}
-			if (personMapper.insertPerson(person) > 0) {
-				authorizedMapper.insertAuthorized(new Authorized(person.getId(), -1));
+			if (personMapper.insertPerson(person) > 0 && authorizedMapper.insertAuthorized(new Authorized(person.getId(), -1)) > 0) {
+				personPageCount = -1;
 				return true;
+			} else {
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return false;
 			}
 		} catch (Exception e) {
 			dealException(e);
 		}
 		return false;
 	}
-	
+
 	@Override
 	public LinkedList<Person> addPersons(File file) {
 		try {
@@ -82,11 +86,11 @@ public class PersonnelServiceImpl implements PersonnelService {
 				Integer grade = CsvDeal.string2Int(map.get("grade"));
 				Date birthday = CsvDeal.string2Date(map.get("birthday"));
 				if (grade == null || birthday == null) {
-					fail.add(new Person(map.get("id"), map.get("name"), map.get("sex"), map.get("college"), grade.intValue(), map.get("professionClass"), map.get("phone"), map.get("cornet"), map.get("qq"), birthday, map.get("introduction"), map.get("team"), map.get("password")));
+					fail.add(new Person(map.get("id"), map.get("name"), map.get("sex"), map.get("college"), -1, map.get("professionClass"), map.get("phone"), map.get("cornet"), map.get("qq"), null, map.get("introduction"), map.get("team"), map.get("password")));
 				} else {
 					persons.add(new Person(map.get("id"), map.get("name"), map.get("sex"), map.get("college"), grade.intValue(), map.get("professionClass"), map.get("phone"), map.get("cornet"), map.get("qq"), birthday, map.get("introduction"), map.get("team"), map.get("password")));
 				}
-				
+
 			}
 			for (Person person : persons) {
 				if (!addPerson(person)) {
@@ -99,17 +103,15 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public boolean writePersonFile(File file) {
-		CSVPrinter csvPrinter = null;
-		try {
-			csvPrinter = CsvDeal.createCSVPrinter(file);
+		try (CSVPrinter csvPrinter = CsvDeal.createCSVPrinter(file)) {
 			if (csvPrinter == null) {
 				return false;
 			}
 			csvPrinter.printRecord("id", "name", "sex", "college", "grade", "professionClass", "phone", "cornet", "qq", "birthday", "introduction", "team", "password");
-			csvPrinter.printRecord("学号(字符串)", "名字(字符串)", "性别(字符串)", "学院(字符串)", "年级(数字)", "专业班级(字符串)", "手机(字符串)", "短号(字符串)", "qq(字符串)", "生日(yyyy/MM/dd)", "简介(字符串)", "组别(字符串)", "密码(字符串)");
+			csvPrinter.printRecord("学号(字符串)", "名字(字符串)", "性别(字符串)", "学院(字符串)", "年级(数字)", "专业班级(字符串)", "手机(字符串)", "短号(字符串)", "qq(字符串)", "生日(" + CsvDeal.DATE_FORMAT_STRING + ")", "简介(字符串)", "组别(字符串)", "密码(字符串)");
 			Person[] persons = personMapper.selectAllPerson();
 			for (Person person : persons) {
 				String birthday = CsvDeal.date2String(person.getBirthday());
@@ -119,29 +121,26 @@ public class PersonnelServiceImpl implements PersonnelService {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-		} finally {
-			if (csvPrinter != null) {
-				try {
-					csvPrinter.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
 		}
 		return false;
 	}
-	
+
 	@Override
 	public boolean removePerson(String id) {
 		try {
 			authorizedMapper.deleteAuthorizedByPersonId(id);
-			return personMapper.deletePerson(id) > 0;
+			if (personMapper.deletePerson(id) > 0) {
+				return true;
+			} else {
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return false;
+			}
 		} catch (Exception e) {
 			dealException(e);
 		}
 		return false;
 	}
-	
+
 	@Override
 	public Person findPersonById(String id) {
 		try {
@@ -151,11 +150,11 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Person[] findPersons(int page) {
 		try {
-			int len = personneConfiguration.getListPersonLength();
+			int len = listPersonLength;
 			int off = (page - 1) * len;
 			return personMapper.selectPersons(off, len);
 		} catch (Exception e) {
@@ -163,7 +162,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return new Person[0];
 	}
-	
+
 	@Override
 	public boolean changePerson(Person person) {
 		try {
@@ -180,13 +179,13 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public int getPersonPageCount() {
 		try {
 			if (personPageCount == -1) {
 				int count = personMapper.selectPersonCount();
-				int len = personneConfiguration.getListPersonLength();
+				int len = listPersonLength;
 				personPageCount = countPageCount(count, len);
 			}
 			return personPageCount;
@@ -195,7 +194,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return 0;
 	}
-	
+
 	/////////////////////////////////////////////////////////////////////////////
 	@Override
 	public boolean addPermission(Permission permission) {
@@ -206,18 +205,23 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public boolean removePermission(int permission) {
 		try {
 			authorizedMapper.deleteAuthorizedByPermission(permission);
-			return permissionMapper.deletePermission(permission) > 0;
+			if (permissionMapper.deletePermission(permission) > 0) {
+				return true;
+			} else {
+				TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+				return false;
+			}
 		} catch (Exception e) {
 			dealException(e);
 		}
 		return false;
 	}
-	
+
 	@Override
 	public Permission findPermission(int permission) {
 		try {
@@ -227,7 +231,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public Permission[] findAllPermission() {
 		try {
@@ -237,7 +241,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return new Permission[0];
 	}
-	
+
 	@Override
 	public boolean changePermission(Permission permission) {
 		try {
@@ -247,7 +251,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return false;
 	}
-	
+
 	/////////////////////////////////////////////////////////////////////////////
 	@Override
 	public boolean addAuthorized(Authorized authorized) {
@@ -258,7 +262,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public boolean removeAuthorized(Authorized authorized) {
 		try {
@@ -268,7 +272,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public Authorized[] findAuthorizedById(String id) {
 		try {
@@ -278,7 +282,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return new Authorized[0];
 	}
-	
+
 	@Override
 	public Authorized[] findAuthorizedByPermission(int permission) {
 		try {
@@ -288,7 +292,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return new Authorized[0];
 	}
-	
+
 	@Override
 	public Authorized[] findAllAuthorized() {
 		try {
@@ -298,7 +302,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return new Authorized[0];
 	}
-	
+
 	@Override
 	public boolean findExistAuthorized(Authorized authorized) {
 		try {
@@ -308,23 +312,18 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return false;
 	}
-	
+
 	////////////////////////////////////////////////////////////
-	
+
 	@Override
 	public boolean checkToken(String token) {
-		try {
-			return token != null && token.equals(personneConfiguration.getToken());
-		} catch (Exception e) {
-			dealException(e);
-		}
-		return false;
+		return this.token.equals(token);
 	}
-	
+
 	@Override
 	public boolean checkPassword(Person person) {
 		try {
-			if (person == null || person.getPassword() == null || person.getId() == null) {
+			if (person == null || person.getId() == null || person.getPassword() == null) {
 				return false;
 			}
 			Person p = personMapper.selectPersonById(person.getId());
@@ -350,22 +349,22 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public boolean checkPersonnelDisabled(Person person) {
 		return findExistAuthorized(person, -1);
 	}
-	
+
 	@Override
 	public boolean checkPersonnelAdmin(Person person) {
 		return findExistAuthorized(person, 1);
 	}
-	
+
 	@Override
 	public boolean checkPersonnelRoot(Person person) {
 		return findExistAuthorized(person, 0);
 	}
-	
+
 	/////////////////////////////////////////////////////////////////////////
 	private boolean findExistAuthorized(Person person, int permission) {
 		try {
@@ -386,7 +385,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return false;
 	}
-	
+
 	private String[] createPages(int count, int len) {
 		String[] pages = new String[countPageCount(count, len)];
 		for (int i = 0; i < pages.length; i++) {
@@ -394,7 +393,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 		}
 		return pages;
 	}
-	
+
 	private int countPageCount(int count, int len) {
 		if (count % len == 0) {
 			return count / len;
@@ -402,7 +401,7 @@ public class PersonnelServiceImpl implements PersonnelService {
 			return count / len + 1;
 		}
 	}
-	
+
 	private void dealException(Exception e) {
 		TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
 		e.printStackTrace();

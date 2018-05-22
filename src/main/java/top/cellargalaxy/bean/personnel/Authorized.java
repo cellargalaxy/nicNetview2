@@ -1,11 +1,17 @@
 package top.cellargalaxy.bean.personnel;
 
-
 /**
+ * 授权
  * Created by cellargalaxy on 17-12-7.
  */
 public class Authorized {
+	/**
+	 * 被授权人的id
+	 */
 	private String personId;
+	/**
+	 * 被授予的权限
+	 */
 	private int permission;
 	
 	public Authorized() {

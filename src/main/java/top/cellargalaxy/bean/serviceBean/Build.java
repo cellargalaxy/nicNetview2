@@ -6,11 +6,21 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 /**
+ * 楼栋
  * Created by cellargalaxy on 17-12-28.
  */
 public class Build implements Comparable<Build> {
+	/**
+	 * 楼栋名
+	 */
 	private final String name;
+	/**
+	 * 设备
+	 */
 	private final LinkedList<Equipment> equipments;
+	/**
+	 * 楼栋状态，值跟设备一样。如果此楼栋有设备挂了，则楼栋状态为挂，反之亦然。
+	 */
 	private boolean status;
 	
 	public Build(String name) {

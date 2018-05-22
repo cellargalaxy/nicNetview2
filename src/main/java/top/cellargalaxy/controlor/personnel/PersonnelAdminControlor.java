@@ -96,15 +96,20 @@ public class PersonnelAdminControlor {
 	@ResponseBody
 	@PostMapping("/changePerson")
 	public String changePerson(Person person, String pw, HttpSession session) {
+		Person loginPerson = ControlorUtil.getPerson(session);
+		if (!loginPerson.getId().equals(person.getId())) {
+			LogUtil.info(logger, loginPerson, "你没有管理员权限修改他人信息，请用管理员账号登录 " + person);
+			return ControlorUtil.createJSONObject(true, "你没有管理员权限修改他人信息，请用管理员账号登录").toString();
+		}
 		String string = PersonnelControlor.checkPerson(person, pw);
 		if (string != null) {
 			return string;
 		}
 		if (personnelService.changePerson(person)) {
-			LogUtil.info(logger, session, "修改人员信息成功 " + person);
+			LogUtil.info(logger, loginPerson, "修改人员信息成功 " + person);
 			return ControlorUtil.createJSONObject(true, "修改人员信息成功").toString();
 		} else {
-			LogUtil.info(logger, session, "修改人员信息失败 " + person);
+			LogUtil.info(logger, loginPerson, "修改人员信息失败 " + person);
 			return ControlorUtil.createJSONObject(false, "修改人员信息失败").toString();
 		}
 	}

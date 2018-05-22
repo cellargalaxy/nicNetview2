@@ -12,6 +12,7 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import top.cellargalaxy.configuration.GlobalConfiguration;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -24,7 +25,8 @@ import java.util.List;
  */
 public class HttpRequestBaseDeal {
 	private static final CloseableHttpClient httpClient = HttpClients.createDefault();
-	
+	private static final String coding = GlobalConfiguration.CODING;
+
 	public static final HttpGet createHttpGet(String url, List<NameValuePair> nameValuePairs) {
 		try {
 			if (url == null) {
@@ -32,7 +34,7 @@ public class HttpRequestBaseDeal {
 			}
 			HttpGet httpGet = new HttpGet(url);
 			if (nameValuePairs != null && nameValuePairs.size() > 0) {
-				String paramsString = EntityUtils.toString(new UrlEncodedFormEntity(nameValuePairs, "utf-8"));
+				String paramsString = EntityUtils.toString(new UrlEncodedFormEntity(nameValuePairs, coding));
 				httpGet.setURI(new URI(httpGet.getURI().toString() + "?" + paramsString));
 			}
 			return httpGet;
@@ -45,7 +47,7 @@ public class HttpRequestBaseDeal {
 		}
 		return null;
 	}
-	
+
 	public static final HttpPost createHttpPost(String url, List<NameValuePair> nameValuePairs) {
 		try {
 			if (url == null) {
@@ -53,7 +55,7 @@ public class HttpRequestBaseDeal {
 			}
 			HttpPost httpPost = new HttpPost(url);
 			if (nameValuePairs != null && nameValuePairs.size() > 0) {
-				String paramsString = EntityUtils.toString(new UrlEncodedFormEntity(nameValuePairs, "utf-8"));
+				String paramsString = EntityUtils.toString(new UrlEncodedFormEntity(nameValuePairs, coding));
 				httpPost.setURI(new URI(httpPost.getURI().toString() + "?" + paramsString));
 			}
 			return httpPost;
@@ -66,15 +68,15 @@ public class HttpRequestBaseDeal {
 		}
 		return null;
 	}
-	
-	public static final String executeHttpRequestBase(HttpRequestBase httpRequestBase,int timeout) {
+
+	public static final String executeHttpRequestBase(HttpRequestBase httpRequestBase, int timeout) {
 		try {
 			RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(timeout).setConnectTimeout(timeout).build();
 			httpRequestBase.setConfig(requestConfig);
 			HttpResponse httpResponse = httpClient.execute(httpRequestBase);
 			if (httpResponse.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
 				HttpEntity entity = httpResponse.getEntity();
-				return EntityUtils.toString(entity, "utf-8");
+				return EntityUtils.toString(entity, coding);
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

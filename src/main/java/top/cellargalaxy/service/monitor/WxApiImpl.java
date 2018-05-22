@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import top.cellargalaxy.bean.monitor.Equipment;
+import top.cellargalaxy.configuration.GlobalConfiguration;
 import top.cellargalaxy.configuration.MonitorConfiguration;
 import top.cellargalaxy.util.HttpRequestBaseDeal;
 
@@ -19,40 +20,42 @@ import java.util.*;
  * Created by cellargalaxy on 17-12-31.
  */
 @Component
-public class WxSdkImpl implements WxSdk {
-	@Autowired
-	private MonitorConfiguration monitorConfiguration;
-	
+public class WxApiImpl implements WxApi {
+	private final String wxToken;
+	private final String wxUrl;
+	private final int wxTimeout;
+
 	private final LinkedList<Build> builds;
-	
-	public WxSdkImpl() {
+
+	@Autowired
+	public WxApiImpl(MonitorConfiguration monitorConfiguration) {
+		wxToken = monitorConfiguration.getWxToken();
+		wxUrl = monitorConfiguration.getWxUrl();
+		wxTimeout = monitorConfiguration.getWxTimeout();
 		builds = new LinkedList<>();
 	}
-	
+
 	@Override
 	public void addChangeStatusEquipment(Equipment equipment) {
-		try {
-			if (equipment == null || equipment.getIsWarn() != Equipment.IS_WARM_NUM) {
-				return;
-			}
-			synchronized (builds) {
-				for (Build build : builds) {
-					if (build.getName().equals(equipment.getBuild())) {
-						build.addEquipment(equipment);
-						return;
-					}
+		if (equipment == null || equipment.getIsWarn() != Equipment.IS_WARM_NUM ||
+				equipment.getBuild() == null || equipment.getBuild().length() == 0) {
+			return;
+		}
+		synchronized (builds) {
+			for (Build build : builds) {
+				if (equipment.getBuild().equals(build.getName())) {
+					build.addEquipment(equipment);
+					return;
 				}
-				Build build = new Build(equipment.getBuild());
-				build.addEquipment(equipment);
-				builds.add(build);
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
+			Build build = new Build(equipment.getBuild());
+			build.addEquipment(equipment);
+			builds.add(build);
 		}
 	}
-	
+
 	private String createInfo() {
-		String info = "";
+		StringBuilder stringBuilder = new StringBuilder();
 		synchronized (builds) {
 			Collections.sort(builds);
 			Iterator<Build> iterator = builds.iterator();
@@ -60,49 +63,51 @@ public class WxSdkImpl implements WxSdk {
 				Build build = iterator.next();
 				if (build.getCons().size() == 0 && build.getNotCons().size() == 0) {
 					iterator.remove();
+					continue;
 				}
 				if (build.getCons().size() == 1) {
 					Equipment equipment = null;
 					for (Map.Entry<String, Equipment> equipmentEntry : build.getCons().entrySet()) {
 						equipment = equipmentEntry.getValue();
 					}
-					info += "通 " + equipment.getFullName() + " " + equipment.getIp() + "\n";
+					stringBuilder.append("通 " + equipment.getFullName() + " " + equipment.getIp() + "\n");
 				} else if (build.getCons().size() > 1) {
-					info += "通 " + build.getName() + "：" + build.getCons().size() + "台\n";
+					stringBuilder.append("通 " + build.getName() + "：" + build.getCons().size() + "台\n");
 				}
 				if (build.getNotCons().size() == 1) {
 					Equipment equipment = null;
 					for (Map.Entry<String, Equipment> equipmentEntry : build.getNotCons().entrySet()) {
 						equipment = equipmentEntry.getValue();
 					}
-					info += "挂 " + equipment.getFullName() + " " + equipment.getIp() + "\n";
+					stringBuilder.append("挂 " + equipment.getFullName() + " " + equipment.getIp() + "\n");
 				} else if (build.getNotCons().size() > 1) {
-					info += "挂 " + build.getName() + "：" + build.getNotCons().size() + "台\n";
+					stringBuilder.append("挂 " + build.getName() + "：" + build.getNotCons().size() + "台\n");
 				}
 			}
 		}
-		return info;
+		return stringBuilder.toString();
 	}
-	
-	@Scheduled(fixedDelay = 1000 * 30)
+
+	@Scheduled(fixedDelay = 1000 * 60)
 	public void send() {
 		try {
 			String info = createInfo();
+			System.out.println("info: "+info);
 			if (info == null || info.length() == 0) {
 				return;
 			}
 			List<NameValuePair> params = new ArrayList<>();
-			params.add(new BasicNameValuePair("token", monitorConfiguration.getWxToken()));
+			params.add(new BasicNameValuePair("token", wxToken));
 			params.add(new BasicNameValuePair("info", info));
-			HttpPost httpPost = new HttpPost(monitorConfiguration.getWxUrl());
-			UrlEncodedFormEntity urlEncodedFormEntity = new UrlEncodedFormEntity(params, "UTF-8");
+			HttpPost httpPost = new HttpPost(wxUrl);
+			UrlEncodedFormEntity urlEncodedFormEntity = new UrlEncodedFormEntity(params, GlobalConfiguration.CODING);
 			httpPost.setEntity(urlEncodedFormEntity);
-			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpPost, 10000);
+			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpPost, wxTimeout);
 			if (result == null) {
 				return;
 			}
 			JSONObject jsonObject = new JSONObject(result);
-			if (jsonObject.has("result") || jsonObject.getBoolean("result")) {
+			if (jsonObject.has("result") && jsonObject.getBoolean("result")) {
 				synchronized (builds) {
 					builds.clear();
 				}
@@ -111,47 +116,43 @@ public class WxSdkImpl implements WxSdk {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private class Build implements Comparable<Build> {
 		private final String name;
 		private final Map<String, Equipment> cons;
 		private final Map<String, Equipment> notCons;
-		
+
 		public Build(String name) {
 			this.name = name;
 			cons = new HashMap<>();
 			notCons = new HashMap<>();
 		}
-		
+
 		public synchronized void addEquipment(Equipment equipment) {
 			if (equipment.isStatus()) {
 				cons.put(equipment.getId(), equipment);
+				notCons.remove(equipment.getId());
 			} else {
+				cons.remove(equipment.getId());
 				notCons.put(equipment.getId(), equipment);
 			}
 		}
-		
+
 		public String getName() {
 			return name;
 		}
-		
+
 		public Map<String, Equipment> getCons() {
 			return cons;
 		}
-		
+
 		public Map<String, Equipment> getNotCons() {
 			return notCons;
 		}
-		
+
 		@Override
-		public int compareTo(Build o) {
-			if (name == null && (o == null || o.getName() == null)) {
-				return 0;
-			}
-			if (name == null) {
-				return 1;
-			}
-			return name.compareTo(o.getName());
+		public int compareTo(Build build) {
+			return name.compareTo(build.getName());
 		}
 	}
 }

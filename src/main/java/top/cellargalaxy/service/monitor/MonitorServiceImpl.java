@@ -21,6 +21,7 @@ import top.cellargalaxy.util.CsvDeal;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by cellargalaxy on 17-12-8.
@@ -35,27 +36,32 @@ public class MonitorServiceImpl implements MonitorService {
 	@Autowired
 	private PlaceMapper placeMapper;
 	@Autowired
-	private MonitorConfiguration monitorConfiguration;
+	private PersonelApi personelApi;
 	@Autowired
-	private PersonelSdk personelSdk;
-	@Autowired
-	private WxSdk wxSdk;
-	
-	private LinkedList<Build> builds;
-	private LinkedList<Build> netview;
-	private volatile int malfunctionPageCount;
-	private final String nullBuildName = "空闲设备";
+	private WxApi wxApi;
+
 	private final Logger logger = LoggerFactory.getLogger(this.getClass());
-	
-	public MonitorServiceImpl() {
+	public static final String NULL_BUILD_NAME = "空闲设备";
+
+	private final String token;
+	private final int listMalfunctionLength;
+
+	private volatile ConcurrentHashMap<String, Build> builds;
+	private volatile ConcurrentHashMap<String, Build> netview;
+	private volatile int malfunctionPageCount;
+
+	@Autowired
+	public MonitorServiceImpl(MonitorConfiguration monitorConfiguration) {
+		token = monitorConfiguration.getToken();
+		listMalfunctionLength = monitorConfiguration.getListMalfunctionLength();
 		malfunctionPageCount = -1;
 	}
-	
+
 	@Override
-	public synchronized boolean init() {
+	public boolean init() {
 		try {
-			builds = null;
-			initNetview(getBuilds());
+			builds = initBuilds();
+			netview = initNetview(builds);
 			countMalfunctionPageCount();
 			return true;
 		} catch (Exception e) {
@@ -63,7 +69,7 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public void addChangeStatusEquipment(Equipment equipment) {
 		try {
@@ -72,26 +78,30 @@ public class MonitorServiceImpl implements MonitorService {
 			} else {
 				logger.info("挂 " + equipment.getFullName());
 			}
-			wxSdk.addChangeStatusEquipment(equipment);
+			wxApi.addChangeStatusEquipment(equipment);
 			malfunctionMapper.insertMalfunction(new Malfunction(equipment));
 		} catch (Exception e) {
 			dealException(e);
 		}
 	}
-	
+
 	@Override
-	public synchronized LinkedList<Build> findWarmNetview() {
+	public LinkedList<Build> findWarmNetview() {
 		try {
 			LinkedList<Build> warmBuilds = new LinkedList<>();
-			for (Build build : getNetview()) {
-				if (!build.isStatus()) {
-					Build b = new Build(build.getName());
-					for (Equipment equipment : build.getEquipments()) {
-						if (!equipment.isStatus()) {
-							b.addEquipment(equipment);
+			ConcurrentHashMap<String, Build> netview = getNetview();
+			synchronized (netview) {
+				for (Map.Entry<String, Build> entry : netview.entrySet()) {
+					Build build = entry.getValue();
+					if (!build.isStatus()) {
+						Build b = new Build(build.getName());
+						for (Equipment equipment : build.getEquipments()) {
+							if (!equipment.isStatus()) {
+								b.addEquipment(equipment);
+							}
 						}
+						warmBuilds.add(b);
 					}
-					warmBuilds.add(b);
 				}
 			}
 			return warmBuilds;
@@ -100,18 +110,21 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return null;
 	}
-	
+
 	@Override
-	public synchronized LinkedList<Build> findNetview() {
-		return getNetview();
+	public LinkedList<Build> findNetview() {
+		Collection<Build> collection = getNetview().values();
+		LinkedList<Build> linkedList=new LinkedList<>(collection);
+		Collections.sort(linkedList);
+		return linkedList;
 	}
-	
+
 	///////////////////////////////////////////////////////////////
 	@Override
 	public boolean addPlace(Place place) {
 		try {
 			if (placeMapper.insertPlace(place) > 0) {
-				addBuild(place.getBuild());
+				addBuild0(place.getBuild());
 				return true;
 			}
 		} catch (Exception e) {
@@ -119,13 +132,13 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public boolean removePlace(Place place) {
 		try {
 			equipmentMapper.deleteEquipmentByPlace(place);
 			if (placeMapper.deletePlace(place) > 0) {
-				removeBuild(place.getBuild());
+				removeBuild0(place.getBuild());
 				return true;
 			}
 		} catch (Exception e) {
@@ -133,7 +146,7 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public Place[] findAllPlace() {
 		try {
@@ -143,22 +156,23 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return new Place[0];
 	}
-	
+
 	/////////////////////////////////////////////////////////////////////
 	@Override
 	public boolean addEquipment(Equipment equipment) {
 		try {
-			if (equipment.getIp() != null && equipment.getIp().length() == 0) {
-				equipment.setIp(null);
+			try {
+				if (equipment.getIp() != null && equipment.getIp().length() == 0) {
+					equipment.setIp(null);
+				}
+				Place place = new Place(equipment.getArea(), equipment.getBuild(), equipment.getFloor(), equipment.getNumber());
+				addBuild0(place.getBuild());
+				placeMapper.insertPlace(place);
+			} catch (Exception e) {
 			}
-			Place place = new Place(equipment.getArea(), equipment.getBuild(), equipment.getFloor(), equipment.getNumber());
-			addBuild(place.getBuild());
-			placeMapper.insertPlace(place);
-		} catch (Exception e) {
-		}
-		try {
+
 			if (equipmentMapper.insertEquipment(equipment) > 0) {
-				addEquipmentIntoBuilds(equipment);
+				addEquipment0(equipment);
 				return true;
 			}
 		} catch (Exception e) {
@@ -166,12 +180,12 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public LinkedList<Equipment> addEquipments(File file) {
 		try {
 			Iterable<CSVRecord> records = CsvDeal.createCSVRecords(file);
-			if (records==null) {
+			if (records == null) {
 				return null;
 			}
 			Iterator<CSVRecord> iterator = records.iterator();
@@ -220,46 +234,39 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return null;
 	}
-	
+
 	@Override
-	public synchronized boolean writeEquipmentFile(File file) {
-		CSVPrinter csvPrinter=null;
-		try {
-			csvPrinter = CsvDeal.createCSVPrinter(file);
-			if (csvPrinter==null) {
+	public boolean writeEquipmentFile(File file) {
+		try (CSVPrinter csvPrinter = CsvDeal.createCSVPrinter(file)) {
+			if (csvPrinter == null) {
 				return false;
 			}
 			csvPrinter.printRecord("id", "model", "name", "buyDate", "area", "build", "floor", "number", "ip", "checkTimes", "isWarn", "remark", "installDate");
-			csvPrinter.printRecord("编号(字符串)", "机型(字符串)", "名字(字符串)", "购买日期("+CsvDeal.DATE_FORMAT_STRING+")", "校区(字符串)", "楼栋(字符串)", "楼层(字符串)", "序号(数字)", "ip(字符串)", "检测次数(数字)", "是否警告(0:否,1:是)", "备注(字符串)", "安装日期("+CsvDeal.DATE_FORMAT_STRING+")");
-			LinkedList<Build> builds = getBuilds();
-			for (Build build : builds) {
-				for (Equipment e : build.getEquipments()) {
-					String buyDate=CsvDeal.date2String(e.getBuyDate());
-					String installDate=CsvDeal.date2String(e.getInstallDate());
-					csvPrinter.printRecord(e.getId(), e.getModel(), e.getName(), buyDate, e.getArea(), e.getBuild(), e.getFloor(),
-							e.getNumber(), e.getIp(), e.getCheckTimes(), e.getIsWarn(), e.getRemark(), installDate);
+			csvPrinter.printRecord("编号(字符串)", "机型(字符串)", "名字(字符串)", "购买日期(" + CsvDeal.DATE_FORMAT_STRING + ")", "校区(字符串)", "楼栋(字符串)", "楼层(字符串)", "序号(数字)", "ip(字符串)", "检测次数(数字)", "是否警告(0:否,1:是)", "备注(字符串)", "安装日期(" + CsvDeal.DATE_FORMAT_STRING + ")");
+			ConcurrentHashMap<String, Build> builds = getBuilds();
+			synchronized (builds) {
+				for (Map.Entry<String, Build> entry : builds.entrySet()) {
+					Build build = entry.getValue();
+					for (Equipment e : build.getEquipments()) {
+						String buyDate = CsvDeal.date2String(e.getBuyDate());
+						String installDate = CsvDeal.date2String(e.getInstallDate());
+						csvPrinter.printRecord(e.getId(), e.getModel(), e.getName(), buyDate, e.getArea(), e.getBuild(), e.getFloor(),
+								e.getNumber(), e.getIp(), e.getCheckTimes(), e.getIsWarn(), e.getRemark(), installDate);
+					}
 				}
 			}
 			return true;
 		} catch (Exception e) {
 			e.printStackTrace();
-		}finally {
-			if (csvPrinter!=null) {
-				try {
-					csvPrinter.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
 		}
 		return false;
 	}
-	
+
 	@Override
 	public boolean removeEquipment(String id) {
 		try {
 			if (equipmentMapper.deleteEquipment(id) > 0) {
-				removeEquipmentFromBuilds(id);
+				removeEquipment0(id);
 				return true;
 			}
 		} catch (Exception e) {
@@ -267,7 +274,7 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public Equipment findEquipmentById(String id) {
 		try {
@@ -277,26 +284,20 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return null;
 	}
-	
+
 	@Override
 	public LinkedList<Build> findAllEquipment() {
-		return getBuilds();
+		Collection<Build> collection=getBuilds().values();
+		LinkedList<Build> linkedList=new LinkedList<>(collection);
+		Collections.sort(linkedList);
+		return linkedList;
 	}
-	
+
 	@Override
 	public boolean changeEquipment(Equipment equipment) {
 		try {
-			if (equipment.getIp() != null && equipment.getIp().length() == 0) {
-				equipment.setIp(null);
-			}
-			Place place = new Place(equipment.getArea(), equipment.getBuild(), equipment.getFloor(), equipment.getNumber());
-			addBuild(place.getBuild());
-			placeMapper.insertPlace(place);
-		} catch (Exception e) {
-		}
-		try {
 			if (equipmentMapper.updateEquipment(equipment) > 0) {
-				changeEquipmentFromBuilds(equipment);
+				changeEquipment0(equipment);
 				return true;
 			}
 		} catch (Exception e) {
@@ -304,9 +305,9 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return false;
 	}
-	
+
 	/////////////////////////////////////////////////////////////////
-	
+
 	@Override
 	public boolean removeMalfunction(Malfunction malfunction) {
 		try {
@@ -317,11 +318,11 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public Malfunction[] findMalfunctions(int page) {
 		try {
-			int len = monitorConfiguration.getListMalfunctionLength();
+			int len = listMalfunctionLength;
 			int off = (page - 1) * len;
 			return malfunctionMapper.selectMalfunctions(off, len);
 		} catch (Exception e) {
@@ -329,7 +330,7 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return new Malfunction[0];
 	}
-	
+
 	@Override
 	public int getMalfunctionPageCount() {
 		try {
@@ -342,206 +343,200 @@ public class MonitorServiceImpl implements MonitorService {
 		}
 		return 0;
 	}
-	
+
 	///////////////////////////////////////////////////////////////////
 	@Override
 	public boolean checkToken(String token) {
-		try {
-			if (token != null) {
-				return token.equals(monitorConfiguration.getToken());
-			}
-		} catch (Exception e) {
-			dealException(e);
-		}
-		return false;
+		return this.token.equals(token);
 	}
-	
+
 	@Override
 	public boolean checkPassword(Person person) {
-		return personelSdk.checkPassword(person.getId(), person.getPassword());
+		return personelApi.checkPassword(person.getId(), person.getPassword());
 	}
-	
+
 	@Override
 	public boolean checkMonitorDisabled(Person person) {
-		return personelSdk.checkMonitorDisabled(person.getId());
+		return personelApi.checkMonitorDisabled(person.getId());
 	}
-	
+
 	@Override
 	public boolean checkMonitorAdmin(Person person) {
-		return personelSdk.checkMonitorAdmin(person.getId());
+		return personelApi.checkMonitorAdmin(person.getId());
 	}
-	
+
 	@Override
 	public boolean checkMonitorRoot(Person person) {
-		return personelSdk.checkMonitorRoot(person.getId());
+		return personelApi.checkMonitorRoot(person.getId());
 	}
-	
+
 	/////////////////////////////////////////////////////////////////////////
-	private synchronized void initBuilds() {
+
+	/**
+	 * 从数据库读取全部设备，装换到Build对象里
+	 *
+	 * @return
+	 */
+	private ConcurrentHashMap<String, Build> initBuilds() {
 		Equipment[] equipments = equipmentMapper.selectAllEquipment();
-		builds = new LinkedList<>();
-		Build nullBuild = new Build(nullBuildName);
-		builds.add(nullBuild);
-		mian:
+		ConcurrentHashMap<String, Build> builds = new ConcurrentHashMap<>();
+		Build nullBuild = new Build(NULL_BUILD_NAME);
+		builds.put(nullBuild.getName(), nullBuild);
+		main:
 		for (Equipment equipment : equipments) {
 			if (equipment.getBuild() == null || equipment.getBuild().length() == 0) {
 				nullBuild.addEquipment(equipment);
-				continue mian;
+				continue;
 			}
-			for (Build build : builds) {
-				if (build.getName().equals(equipment.getBuild())) {
-					build.addEquipment(equipment);
-					continue mian;
-				}
+			Build build = builds.get(equipment.getBuild());
+			if (build == null) {
+				build = new Build(equipment.getBuild());
+				builds.put(build.getName(), build);
 			}
-			Build build = new Build(equipment.getBuild());
 			build.addEquipment(equipment);
-			builds.add(build);
-		}
-		Collections.sort(builds);
-		netview = null;
-	}
-	
-	private LinkedList<Build> getBuilds() {
-		if (builds == null) {
-			initBuilds();
 		}
 		return builds;
 	}
-	
-	private synchronized void addBuild(String buildName) {
-		if (buildName == null || buildName.length() == 0) {
-			return;
-		}
-		LinkedList<Build> builds = getBuilds();
-		for (Build build : builds) {
-			if (build.getName().equals(buildName)) {
-				return;
-			}
-		}
-		builds.add(new Build(buildName));
-		initNetview(getBuilds());
-	}
-	
-	private synchronized void removeBuild(String buildName) {
-		if (buildName == null) {
-			return;
-		}
-		LinkedList<Build> builds = getBuilds();
-		Iterator<Build> iterator = builds.iterator();
-		while (iterator.hasNext()) {
-			Build build = iterator.next();
-			if (build.getName().equals(buildName)) {
-				iterator.remove();
-				return;
-			}
-		}
-		initNetview(getBuilds());
-	}
-	
-	private synchronized void addEquipmentIntoBuilds(Equipment equipment) {
-		if (equipment == null) {
-			return;
-		}
-		LinkedList<Build> builds = getBuilds();
-		Build nullBuild = null;
-		for (Build build : builds) {
-			if (build.getName().equals(equipment.getBuild())) {
-				build.addEquipment(equipment);
-				return;
-			} else if (build.getName().equals(nullBuildName)) {
-				nullBuild = build;
-			}
-		}
-		if (equipment.getBuild() != null && equipment.getBuild().length() > 0) {
-			Build build = new Build(equipment.getBuild());
-			build.addEquipment(equipment);
-			builds.add(build);
-		} else {
-			nullBuild.addEquipment(equipment);
-		}
-		initNetview(getBuilds());
-	}
-	
-	private synchronized void removeEquipmentFromBuilds(String id) {
-		if (id == null) {
-			return;
-		}
-		LinkedList<Build> builds = getBuilds();
-		Iterator<Build> iterator1 = builds.iterator();
-		while (iterator1.hasNext()) {
-			Build build = iterator1.next();
-			Iterator<Equipment> iterator2 = build.getEquipments().iterator();
-			while (iterator2.hasNext()) {
-				Equipment equipment1 = iterator2.next();
-				if (equipment1.getId().equals(id)) {
-					iterator2.remove();
-					if (build.getEquipments().size() == 0) {
-						iterator1.remove();
-					}
-					return;
-				}
-			}
-		}
-		initNetview(getBuilds());
-	}
-	
-	private synchronized void changeEquipmentFromBuilds(Equipment equipment) {
-		if (equipment == null) {
-			return;
-		}
-		LinkedList<Build> builds = getBuilds();
-		for (Build build : builds) {
-			if (build.getName().equals(equipment.getBuild())) {
-				for (Equipment equipment1 : build.getEquipments()) {
-					if (equipment1.getId().equals(equipment.getId())) {
-						equipment1.set(equipment);
-						return;
-					}
-				}
-			} else if (build.getName().equals(nullBuildName)) {
-				for (Equipment equipment1 : build.getEquipments()) {
-					if (equipment1.getId().equals(equipment.getId())) {
-						equipment1.set(equipment);
-						return;
-					}
-				}
-			}
-		}
-		initNetview(getBuilds());
-	}
-	
-	private synchronized void initNetview(LinkedList<Build> builds) {
+
+	private ConcurrentHashMap<String, Build> getBuilds() {
 		if (builds == null) {
+			builds = initBuilds();
+		}
+		return builds;
+	}
+
+	private void addBuild0(String buildName) {
+		addBuildIntoMap(getBuilds(), buildName);
+		addBuildIntoMap(getNetview(), buildName);
+	}
+
+	private void removeBuild0(String buildName) {
+		removeBuildFromMap(getBuilds(), buildName);
+		removeBuildFromMap(getNetview(), buildName);
+	}
+
+	private void addEquipment0(Equipment equipment) {
+		addEquipmentIntoMap(getBuilds(), equipment);
+		addEquipmentIntoMap(getNetview(), equipment);
+	}
+
+	private void removeEquipment0(String id) {
+		removeEquipmentFromMap(getBuilds(), id);
+		removeEquipmentFromMap(getNetview(), id);
+	}
+
+	private void changeEquipment0(Equipment equipment) {
+		changeEquipmentFromMap(getBuilds(), equipment);
+		changeEquipmentFromMap(getNetview(), equipment);
+	}
+
+	private void addBuildIntoMap(ConcurrentHashMap<String, Build> map, String buildName) {
+		if (map == null || buildName == null || buildName.length() == 0) {
 			return;
 		}
-		netview = new LinkedList<>();
-		for (Build build : builds) {
-			Build b = new Build(build.getName());
-			for (Equipment equipment : build.getEquipments()) {
-				if (equipment.getIp() != null && equipment.getIp().length() > 0) {
-					b.addEquipment(equipment);
-				}
-			}
-			if (b.getEquipments().size() > 0) {
-				netview.add(b);
+		Build build = map.get(buildName);
+		if (build == null) {
+			build = new Build(buildName);
+			map.put(build.getName(), build);
+		}
+	}
+
+	private void removeBuildFromMap(ConcurrentHashMap<String, Build> map, String buildName) {
+		if (map == null || buildName == null) {
+			return;
+		}
+		map.remove(buildName);
+	}
+
+	private void addEquipmentIntoMap(ConcurrentHashMap<String, Build> map, Equipment equipment) {
+		if (map == null || equipment == null) {
+			return;
+		}
+		Build build = map.get(equipment.getBuild());
+		if (build == null) {
+			build = map.get(NULL_BUILD_NAME);
+		}
+		if (build != null) {
+			synchronized (build) {
+				build.addEquipment(equipment);
 			}
 		}
 	}
-	
-	private LinkedList<Build> getNetview() {
-		if (netview == null) {
-			initNetview(getBuilds());
+
+	private void removeEquipmentFromMap(ConcurrentHashMap<String, Build> map, String id) {
+		if (map == null || id == null) {
+			return;
+		}
+		Iterator<Map.Entry<String, Build>> iterator = map.entrySet().iterator();
+		synchronized (map) {
+			while (iterator.hasNext()) {
+				Map.Entry<String, Build> entry = iterator.next();
+				Build build = entry.getValue();
+				build.removeEquipment(id);
+				if (build.getEquipments().size() == 0) {
+					iterator.remove();
+				}
+			}
+		}
+	}
+
+	private void changeEquipmentFromMap(ConcurrentHashMap<String, Build> map, Equipment equipment) {
+		if (map == null || equipment == null) {
+			return;
+		}
+		Build build = map.get(equipment.getBuild());
+		if (build == null) {
+			build = map.get(NULL_BUILD_NAME);
+		}
+		if (build != null) {
+			synchronized (build) {
+				build.removeEquipment(equipment.getId());
+				build.addEquipment(equipment);
+			}
+		}
+	}
+
+	/**
+	 * 从builds这个设备全集里筛选出有ip的设备进行监控
+	 *
+	 * @param builds
+	 * @return
+	 */
+	private ConcurrentHashMap<String, Build> initNetview(ConcurrentHashMap<String, Build> builds) {
+		if (builds == null) {
+			return null;
+		}
+		ConcurrentHashMap<String, Build> netview = new ConcurrentHashMap<>();
+		synchronized (builds) {
+			for (Map.Entry<String, Build> entry : builds.entrySet()) {
+				Build build = entry.getValue();
+				Build b = new Build(build.getName());
+				for (Equipment equipment : build.getEquipments()) {
+					if (equipment.getIp() != null && equipment.getIp().length() > 0) {
+						b.addEquipment(equipment);
+					}
+				}
+				if (b.getEquipments().size() > 0) {
+					netview.put(b.getName(), b);
+				}
+			}
 		}
 		return netview;
 	}
-	
+
+	private ConcurrentHashMap<String, Build> getNetview() {
+		if (netview == null) {
+			netview = initNetview(getBuilds());
+		}
+		return netview;
+	}
+
 	private void countMalfunctionPageCount() {
 		int count = malfunctionMapper.selectMalfunctionCount();
-		int len = monitorConfiguration.getListMalfunctionLength();
+		int len = listMalfunctionLength;
 		malfunctionPageCount = countPageCount(count, len);
 	}
-	
+
 	private int countPageCount(int count, int len) {
 		if (count % len == 0) {
 			return count / len;
@@ -549,7 +544,7 @@ public class MonitorServiceImpl implements MonitorService {
 			return count / len + 1;
 		}
 	}
-	
+
 	private void dealException(Exception e) {
 		e.printStackTrace();
 		TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();

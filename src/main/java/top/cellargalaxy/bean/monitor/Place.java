@@ -1,12 +1,25 @@
 package top.cellargalaxy.bean.monitor;
 
 /**
+ * 地点
  * Created by cellargalaxy on 17-12-7.
  */
 public class Place {
+	/**
+	 * 校区
+	 */
 	private String area;
+	/**
+	 * 楼栋
+	 */
 	private String build;
+	/**
+	 * 楼层
+	 */
 	private String floor;
+	/**
+	 * 楼层编号
+	 */
 	private int number;
 	
 	public Place() {

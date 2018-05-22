@@ -10,7 +10,6 @@ import top.cellargalaxy.bean.serviceBean.Build;
 import top.cellargalaxy.service.monitor.MonitorService;
 
 import java.util.LinkedList;
-import java.util.List;
 
 /**
  * Created by cellargalaxy on 17-12-8.
@@ -25,7 +24,7 @@ public class MonitorApiControlor {
 	@ResponseBody
 	@GetMapping("/inquireNetview")
 	public ReturnBean inquireNetview() {
-		List<Build> builds = monitorService.findNetview();
+		LinkedList<Build> builds = monitorService.findNetview();
 		if (builds != null) {
 			return new ReturnBean(true, builds);
 		} else {

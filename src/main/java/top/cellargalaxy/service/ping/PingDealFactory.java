@@ -1,6 +1,5 @@
 package top.cellargalaxy.service.ping;
 
-
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,7 +8,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PingDealFactory {
 	private PingDeal pingDeal;
-	
+
 	public final PingDeal getPingDeal() {
 		if (pingDeal == null) {
 			if (System.getProperty("os.name").toLowerCase().startsWith("win")) {

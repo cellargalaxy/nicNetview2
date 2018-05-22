@@ -6,7 +6,7 @@ import org.apache.commons.exec.CommandLine;
  * Created by cellargalaxy on 17-12-8.
  */
 public class WinPingDeal implements PingDeal {
-	
+
 	@Override
 	public CommandLine createPingCommandLine(String ip, int pingTimes) {
 		CommandLine cmdLine = new CommandLine("ping");
@@ -15,9 +15,9 @@ public class WinPingDeal implements PingDeal {
 		cmdLine.addArgument(pingTimes + "");
 		return cmdLine;
 	}
-	
+
 	@Override
-	public int analysisDelay(String string) {
+	public int analysisDelay(String string, int defaultValue) {
 		try {
 			int start = string.lastIndexOf(" = ");
 			if (start > -1) {
@@ -25,12 +25,12 @@ public class WinPingDeal implements PingDeal {
 				int end = string.indexOf("ms");
 				if (end > -1) {
 					string = string.substring(0, end);
-					return new Integer(string);
+					return Integer.valueOf(string);
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return -1;
+		return defaultValue;
 	}
 }
