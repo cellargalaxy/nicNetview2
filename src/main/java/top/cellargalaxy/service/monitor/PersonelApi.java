@@ -1,5 +1,7 @@
 package top.cellargalaxy.service.monitor;
 
+import top.cellargalaxy.bean.personnel.Person;
+
 /**
  * Created by cellargalaxy on 17-12-31.
  */
@@ -11,7 +13,7 @@ public interface PersonelApi {
 	 * @param password
 	 * @return
 	 */
-	boolean checkPassword(String id, String password);
+	Person checkPassword(String id, String password);
 
 	/**
 	 * 检测账号是否被禁用

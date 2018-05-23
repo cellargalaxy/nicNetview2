@@ -1,4 +1,4 @@
-package top.cellargalaxy.controlor.monitor;
+package top.cellargalaxy.controlor;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -10,13 +10,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
  * Created by cellargalaxy on 17-12-28.
  */
 @Controller
-@RequestMapping(MonitorPageControlor.MONITOR_PAGE_CONTROLOR_URL)
-public class MonitorPageControlor {
-	public static final String MONITOR_PAGE_CONTROLOR_URL = "/monitor/page";
+@RequestMapping(NetviewPageControlor.MONITOR_PAGE_CONTROLOR_URL)
+public class NetviewPageControlor {
+	public static final String MONITOR_PAGE_CONTROLOR_URL = "/page";
 	
 	@GetMapping("")
 	public String monitor() {
-		return "monitor";
+		return "netview";
 	}
 	
 	@GetMapping("/listNetview")

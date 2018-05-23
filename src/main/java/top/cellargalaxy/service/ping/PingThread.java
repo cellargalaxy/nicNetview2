@@ -7,9 +7,8 @@ import org.springframework.stereotype.Component;
 import top.cellargalaxy.bean.monitor.Equipment;
 import top.cellargalaxy.bean.serviceBean.Build;
 import top.cellargalaxy.bean.serviceBean.PingResult;
-import top.cellargalaxy.configuration.GlobalConfiguration;
-import top.cellargalaxy.configuration.MonitorConfiguration;
-import top.cellargalaxy.service.monitor.MonitorService;
+import top.cellargalaxy.configuration.NetviewConfiguration;
+import top.cellargalaxy.service.monitor.NetviewService;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -23,21 +22,21 @@ import java.util.LinkedList;
 @Component
 public class PingThread {
 	@Autowired
-	private MonitorService monitorService;
+	private NetviewService netviewService;
 
 	private final int maxDelay;
 	private final int pingTimes;
 	private final int pingWaitTime;
-	private final String coding;
+	private final String pingCoding;
 
 	private final PingDeal pingDeal;
 
 	@Autowired
-	public PingThread(MonitorConfiguration monitorConfiguration, PingDealFactory pingDealFactory) {
-		maxDelay = monitorConfiguration.getMaxDelay();
-		pingTimes = monitorConfiguration.getPingTimes();
-		pingWaitTime = monitorConfiguration.getPingWaitTime();
-		coding = GlobalConfiguration.CODING;
+	public PingThread(NetviewConfiguration netviewConfiguration, PingDealFactory pingDealFactory) {
+		maxDelay = netviewConfiguration.getMaxDelay();
+		pingTimes = netviewConfiguration.getPingTimes();
+		pingWaitTime = netviewConfiguration.getPingWaitTime();
+		pingCoding = netviewConfiguration.getPingCoding();
 		pingDeal = pingDealFactory.getPingDeal();
 	}
 
@@ -67,7 +66,7 @@ public class PingThread {
 
 	@Scheduled(fixedDelay = 5 * 1000)
 	public void run() {
-		Collection<Build> netview = monitorService.findNetview();
+		Collection<Build> netview = netviewService.findNetview();
 		LinkedList<Result> results = new LinkedList<>();
 		for (Build build : netview) {
 			for (Equipment equipment : build.getEquipments()) {
@@ -84,10 +83,10 @@ public class PingThread {
 				try {
 					result.getResultHandler().waitFor();
 					PingResult pingResult = new PingResult();
-					String string = result.getByteArrayOutputStream().toString(coding);
+					String string = result.getByteArrayOutputStream().toString(pingCoding);
 					pingResult.setDelay(pingDeal.analysisDelay(string, PingResult.DEFAULT_DELAY_NUM));
 					if (result.getEquipment().addPingResult(pingResult)) {
-						monitorService.addChangeStatusEquipment(result.getEquipment());
+						netviewService.addChangeStatusEquipment(result.getEquipment());
 					}
 				} catch (InterruptedException e) {
 					e.printStackTrace();

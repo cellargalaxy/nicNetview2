@@ -12,7 +12,6 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import top.cellargalaxy.configuration.GlobalConfiguration;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -25,7 +24,7 @@ import java.util.List;
  */
 public class HttpRequestBaseDeal {
 	private static final CloseableHttpClient httpClient = HttpClients.createDefault();
-	private static final String coding = GlobalConfiguration.CODING;
+	private static final String coding = "UTF-8";
 
 	public static final HttpGet createHttpGet(String url, List<NameValuePair> nameValuePairs) {
 		try {

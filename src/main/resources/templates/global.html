@@ -23,17 +23,17 @@
                     <a class="navbar-brand" th:href="@{/}">netview</a>
                 </div>
                 <ul class="nav navbar-nav">
-                    <li><a th:href="@{/monitor/page}">监控</a></li>
-                    <li><a th:href="@{/personnel/page}">人员管理</a></li>
+                    <li><a th:href="@{/page}">监控</a></li>
+                    <li><a href="/personnel/page">人员管理</a></li>
                 </ul>
                 <ul class="nav navbar-nav navbar-right">
-                    <li th:if="${loginPerson==null}"><a th:href="@{/personnel/signUp}"><span
+                    <li th:if="${loginPerson==null}"><a href="/personnel/signUp"><span
                             class="glyphicon glyphicon-user"></span> 注册</a></li>
                     <li th:if="${loginPerson==null}"><a th:href="@{/login}"><span
                             class="glyphicon glyphicon-log-in"></span> 登录</a></li>
                     <li th:if="${loginPerson!=null}"><a
-                            th:href="@{|/personnel/page/personForm/${loginPerson.id}|}"><span
-                            class="glyphicon glyphicon-edit"></span> 修改资料</a></li>
+                            th:href="|/personnel/page/personForm/${loginPerson.id}|"><span
+                            class="glyphicon glyphicomonitorn-edit"></span> 修改资料</a></li>
                     <li th:if="${loginPerson!=null}"><a th:text="|你好 ${loginPerson.name}|"></a></li>
                 </ul>
             </div>
@@ -402,7 +402,7 @@
                             </thead>
                             <tbody>
                             <tr v-for="equipment in build.equipments">
-                                <td><a :href="rootUrl + '/monitor/page/changeEquipment/' + equipment.id">{{ equipment.id
+                                <td><a :href="rootUrl + '/page/changeEquipment/' + equipment.id">{{ equipment.id
                                     }}</a></td>
                                 <td>{{ equipment.model }}</td>
                                 <td>{{ equipment.name }}</td>

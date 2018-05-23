@@ -7,34 +7,65 @@ import org.springframework.stereotype.Component;
  * Created by cellargalaxy on 17-12-7.
  */
 @Component
-public class MonitorConfiguration {
-	@Value("${monitor.ping.maxDelay:1000}")
+public class NetviewConfiguration {
+	@Value("${netview.ping.maxDelay:1000}")
 	private int maxDelay;
-	@Value("${monitor.ping.pingWaitTime:50}")
+	@Value("${netview.ping.pingWaitTime:50}")
 	private int pingWaitTime;
-	@Value("${monitor.ping.pingTimes:1}")
+	@Value("${netview.ping.pingTimes:1}")
 	private int pingTimes;
+	@Value("${netview.ping.coding:UTF-8}")
+	private String pingCoding;
 
-	@Value("${monitor.token:token}")
+	@Value("${netview.token:token}")
 	private String token;
-	@Value("${monitor.listMalfunctionLength:10}")
+	@Value("${netview.listMalfunctionLength:10}")
 	private int listMalfunctionLength;
 
-	@Value("${monitor.personelApi.timeout:5000}")
-	private int personelTimeout;
-	@Value("${monitor.personelApi.token:token}")
-	private String personelToken;
-	@Value(("${monitor.personelApi.inquirePersonPasswordUrl:http://127.0.0.1/personnel/api/inquirePersonPassword}"))
+	@Value("${netview.personnel.coding:UTF-8}")
+	private String personnelCoding;
+	@Value("${netview.personnelApi.timeout:5000}")
+	private int personnelTimeout;
+	@Value("${netview.personnelApi.token:token}")
+	private String personnelToken;
+	@Value(("${netview.personnelApi.inquirePersonPasswordUrl:http://127.0.0.1/personnel/api/inquirePersonPassword}"))
 	private String inquirePersonPasswordUrl;
-	@Value(("${monitor.personelApi.inquireExistAuthorizedUrl:http://127.0.0.1/personnel/api/inquireExistAuthorized}"))
+	@Value(("${netview.personnelApi.inquireExistAuthorizedUrl:http://127.0.0.1/personnel/api/inquireExistAuthorized}"))
 	private String inquireExistAuthorizedUrl;
 
-	@Value("${monitor.wxApi.timeout:60000}")
+	@Value("${netview.wxApi.coding:UTF-8}")
+	private String wxCoding;
+	@Value("${netview.wxApi.timeout:60000}")
 	private int wxTimeout;
-	@Value("${monitor.wxApi.token:token}")
+	@Value("${netview.wxApi.token:token}")
 	private String wxToken;
-	@Value("${monitor.wxApi.url:http://127.0.0.1/wx/sendNetviewWarm}")
+	@Value("${netview.wxApi.url:http://127.0.0.1/wx/sendNetviewWarm}")
 	private String wxUrl;
+
+	public String getPingCoding() {
+		return pingCoding;
+	}
+
+	public void setPingCoding(String pingCoding) {
+		this.pingCoding = pingCoding;
+	}
+
+	public String getWxCoding() {
+		return wxCoding;
+	}
+
+	public void setWxCoding(String wxCoding) {
+		this.wxCoding = wxCoding;
+	}
+
+	public String getPersonnelCoding() {
+
+		return personnelCoding;
+	}
+
+	public void setPersonnelCoding(String personnelCoding) {
+		this.personnelCoding = personnelCoding;
+	}
 
 	public int getMaxDelay() {
 		return maxDelay;
@@ -76,20 +107,20 @@ public class MonitorConfiguration {
 		this.listMalfunctionLength = listMalfunctionLength;
 	}
 
-	public int getPersonelTimeout() {
-		return personelTimeout;
+	public int getPersonnelTimeout() {
+		return personnelTimeout;
 	}
 
-	public void setPersonelTimeout(int personelTimeout) {
-		this.personelTimeout = personelTimeout;
+	public void setPersonnelTimeout(int personnelTimeout) {
+		this.personnelTimeout = personnelTimeout;
 	}
 
-	public String getPersonelToken() {
-		return personelToken;
+	public String getPersonnelToken() {
+		return personnelToken;
 	}
 
-	public void setPersonelToken(String personelToken) {
-		this.personelToken = personelToken;
+	public void setPersonnelToken(String personnelToken) {
+		this.personnelToken = personnelToken;
 	}
 
 	public String getInquirePersonPasswordUrl() {

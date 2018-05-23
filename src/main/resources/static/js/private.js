@@ -44,7 +44,7 @@ function addEquipmentsForm(loadData) {
     var data = new FormData();
     data.append('file', files[0]);
     $.ajax({
-        url: getRootUrl() + '/monitor/admin/uploadEquipmentFile',
+        url: getRootUrl() + '/admin/uploadEquipmentFile',
         type: 'post',
         data: data,
         contentType: "application/x-www-form-urlencoded",
@@ -163,7 +163,7 @@ function inquirePersonPageCount(loadData) {
 
 function inquireMalfunctionPageCount(loadData) {
     $.ajax({
-        url: getRootUrl() + '/monitor/api/inquireMalfunctionPageCount',
+        url: getRootUrl() + '/api/inquireMalfunctionPageCount',
         type: 'get',
         data: {"token": getToken()},
         contentType: "application/x-www-form-urlencoded",
@@ -719,7 +719,7 @@ function createListNetviewTableVue() {
 
 function inquireNetview(loadData) {
     $.ajax({
-        url: getRootUrl() + '/monitor/api/inquireNetview',
+        url: getRootUrl() + '/api/inquireNetview',
         type: 'get',
         data: {"token": getToken()},
         contentType: "application/x-www-form-urlencoded",
@@ -734,7 +734,7 @@ function inquireNetview(loadData) {
 
 function refreshNetview() {
     $.ajax({
-        url: getRootUrl() + '/monitor/admin/refreshNetview',
+        url: getRootUrl() + '/admin/refreshNetview',
         type: 'post',
         data: {},
         contentType: "application/x-www-form-urlencoded",
@@ -773,7 +773,7 @@ function createListEquipmentTableVue() {
 
 function inquireAllEquipment(loadData) {
     $.ajax({
-        url: getRootUrl() + '/monitor/api/inquireAllEquipment',
+        url: getRootUrl() + '/api/inquireAllEquipment',
         type: 'get',
         data: {"token": getToken()},
         contentType: "application/x-www-form-urlencoded",
@@ -793,7 +793,7 @@ function removeEquipment(id) {
     }
     if (confirm("确认删除设备?: " + id)) {
         $.ajax({
-            url: getRootUrl() + '/monitor/admin/removeEquipment',
+            url: getRootUrl() + '/admin/removeEquipment',
             type: 'post',
             data: {id: id},
             contentType: "application/x-www-form-urlencoded",
@@ -842,7 +842,7 @@ function createListPlaceTableVue() {
 
 function inquireAllPlace(loadData) {
     $.ajax({
-        url: getRootUrl() + '/monitor/api/inquireAllPlace',
+        url: getRootUrl() + '/api/inquireAllPlace',
         type: 'get',
         data: {"token": getToken()},
         contentType: "application/x-www-form-urlencoded",
@@ -873,7 +873,7 @@ function addPlace(area, build, floor, number) {
         return;
     }
     $.ajax({
-        url: getRootUrl() + '/monitor/admin/addPlace',
+        url: getRootUrl() + '/admin/addPlace',
         type: 'post',
         data: {area: area, build: build, floor: floor, number: number},
         contentType: "application/x-www-form-urlencoded",
@@ -890,7 +890,7 @@ function addPlace(area, build, floor, number) {
 function removePlace(area, build, floor, number) {
     if (confirm("确认删除地点?: " + area + '-' + build + '-' + floor + '-' + number)) {
         $.ajax({
-            url: getRootUrl() + '/monitor/admin/removePlace',
+            url: getRootUrl() + '/admin/removePlace',
             type: 'post',
             data: {area: area, build: build, floor: floor, number: number},
             contentType: "application/x-www-form-urlencoded",
@@ -931,7 +931,7 @@ function createListMalfunctionTableVue() {
 
 function inquireMalfunctions(loadData, page) {
     $.ajax({
-        url: getRootUrl() + '/monitor/api/inquireMalfunctions',
+        url: getRootUrl() + '/api/inquireMalfunctions',
         type: 'get',
         data: {"token": getToken(), page: page},
         contentType: "application/x-www-form-urlencoded",
@@ -971,7 +971,7 @@ function removeMalfunction(area, build, floor, number, equipmentId, malfunctionD
     }
     if (confirm("确认删除故障记录?: " + area + '-' + build + '-' + floor + '-' + number + '-' + equipmentId + '(' + malfunctionDatetime + ')')) {
         $.ajax({
-            url: getRootUrl() + '/monitor/admin/removeMalfunction',
+            url: getRootUrl() + '/admin/removeMalfunction',
             type: 'post',
             data: {
                 area: area,
@@ -1049,7 +1049,7 @@ function createEquipmentFormVue(func) {
 
 function inquireEquipmentById(loadData, id) {
     $.ajax({
-        url: getRootUrl() + '/monitor/api/inquireEquipmentById',
+        url: getRootUrl() + '/api/inquireEquipmentById',
         type: 'get',
         data: {"token": getToken(), id: id},
         contentType: "application/x-www-form-urlencoded",
@@ -1085,7 +1085,7 @@ function addEquipment(id, model, name, buyDate, area, build, floor, number, ip, 
         isWarn = 0;
     }
     $.ajax({
-        url: getRootUrl() + '/monitor/admin/addEquipment',
+        url: getRootUrl() + '/admin/addEquipment',
         type: 'post',
         data: {
             id: id,
@@ -1110,7 +1110,7 @@ function addEquipment(id, model, name, buyDate, area, build, floor, number, ip, 
         success: function (data) {
             alert(data.data);
             if (data.result) {
-                location.href = getRootUrl() + '/monitor/page/listEquipment';
+                location.href = getRootUrl() + '/page/listEquipment';
             }
         }
     });
@@ -1130,7 +1130,7 @@ function changeEquipment(id, model, name, buyDate, area, build, floor, number, i
         return;
     }
     $.ajax({
-        url: getRootUrl() + '/monitor/admin/changeEquipment',
+        url: getRootUrl() + '/admin/changeEquipment',
         type: 'post',
         data: {
             id: id,
@@ -1155,7 +1155,7 @@ function changeEquipment(id, model, name, buyDate, area, build, floor, number, i
         success: function (data) {
             alert(data.data);
             if (data.result) {
-                location.href = getRootUrl() + '/monitor/page/listEquipment';
+                location.href = getRootUrl() + '/page/listEquipment';
             }
         }
     });

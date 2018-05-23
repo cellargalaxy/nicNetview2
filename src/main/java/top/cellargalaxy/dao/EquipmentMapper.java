@@ -1,4 +1,4 @@
-package top.cellargalaxy.dao.monitor;
+package top.cellargalaxy.dao;
 
 import org.apache.ibatis.annotations.*;
 import top.cellargalaxy.bean.monitor.Equipment;

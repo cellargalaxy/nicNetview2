@@ -1,8 +1,9 @@
-package top.cellargalaxy.controlor;
+package top.cellargalaxy.util;
 
 import org.json.JSONObject;
 import org.springframework.web.multipart.MultipartFile;
 import top.cellargalaxy.bean.personnel.Person;
+import top.cellargalaxy.controlor.RootControlor;
 
 import javax.servlet.http.HttpSession;
 import java.io.BufferedOutputStream;

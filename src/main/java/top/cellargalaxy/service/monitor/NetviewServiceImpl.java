@@ -13,13 +13,13 @@ import top.cellargalaxy.bean.monitor.Malfunction;
 import top.cellargalaxy.bean.monitor.Place;
 import top.cellargalaxy.bean.personnel.Person;
 import top.cellargalaxy.bean.serviceBean.Build;
-import top.cellargalaxy.configuration.MonitorConfiguration;
-import top.cellargalaxy.dao.monitor.EquipmentMapper;
-import top.cellargalaxy.dao.monitor.MalfunctionMapper;
-import top.cellargalaxy.dao.monitor.PlaceMapper;
+import top.cellargalaxy.configuration.NetviewConfiguration;
+import top.cellargalaxy.dao.EquipmentMapper;
+import top.cellargalaxy.dao.MalfunctionMapper;
+import top.cellargalaxy.dao.PlaceMapper;
 import top.cellargalaxy.util.CsvDeal;
 
-import java.io.*;
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @Transactional
-public class MonitorServiceImpl implements MonitorService {
+public class NetviewServiceImpl implements NetviewService {
 	@Autowired
 	private EquipmentMapper equipmentMapper;
 	@Autowired
@@ -51,9 +51,9 @@ public class MonitorServiceImpl implements MonitorService {
 	private volatile int malfunctionPageCount;
 
 	@Autowired
-	public MonitorServiceImpl(MonitorConfiguration monitorConfiguration) {
-		token = monitorConfiguration.getToken();
-		listMalfunctionLength = monitorConfiguration.getListMalfunctionLength();
+	public NetviewServiceImpl(NetviewConfiguration netviewConfiguration) {
+		token = netviewConfiguration.getToken();
+		listMalfunctionLength = netviewConfiguration.getListMalfunctionLength();
 		malfunctionPageCount = -1;
 	}
 
@@ -351,7 +351,7 @@ public class MonitorServiceImpl implements MonitorService {
 	}
 
 	@Override
-	public boolean checkPassword(Person person) {
+	public Person checkPassword(Person person) {
 		return personelApi.checkPassword(person.getId(), person.getPassword());
 	}
 

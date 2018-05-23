@@ -7,13 +7,12 @@ import top.cellargalaxy.bean.personnel.Person;
 import top.cellargalaxy.bean.serviceBean.Build;
 
 import java.io.File;
-import java.util.Collection;
 import java.util.LinkedList;
 
 /**
  * Created by cellargalaxy on 17-12-8.
  */
-public interface MonitorService {
+public interface NetviewService {
 	boolean init();
 
 	/**
@@ -160,7 +159,7 @@ public interface MonitorService {
 	 * @param person
 	 * @return
 	 */
-	boolean checkPassword(Person person);
+	Person checkPassword(Person person);
 
 	/**
 	 * 检查是否禁用

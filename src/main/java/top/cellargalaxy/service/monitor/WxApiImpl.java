@@ -9,8 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import top.cellargalaxy.bean.monitor.Equipment;
-import top.cellargalaxy.configuration.GlobalConfiguration;
-import top.cellargalaxy.configuration.MonitorConfiguration;
+import top.cellargalaxy.configuration.NetviewConfiguration;
 import top.cellargalaxy.util.HttpRequestBaseDeal;
 
 import java.io.UnsupportedEncodingException;
@@ -21,6 +20,7 @@ import java.util.*;
  */
 @Component
 public class WxApiImpl implements WxApi {
+	private final String wxCoding;
 	private final String wxToken;
 	private final String wxUrl;
 	private final int wxTimeout;
@@ -28,10 +28,11 @@ public class WxApiImpl implements WxApi {
 	private final LinkedList<Build> builds;
 
 	@Autowired
-	public WxApiImpl(MonitorConfiguration monitorConfiguration) {
-		wxToken = monitorConfiguration.getWxToken();
-		wxUrl = monitorConfiguration.getWxUrl();
-		wxTimeout = monitorConfiguration.getWxTimeout();
+	public WxApiImpl(NetviewConfiguration netviewConfiguration) {
+		wxCoding = netviewConfiguration.getWxCoding();
+		wxToken = netviewConfiguration.getWxToken();
+		wxUrl = netviewConfiguration.getWxUrl();
+		wxTimeout = netviewConfiguration.getWxTimeout();
 		builds = new LinkedList<>();
 	}
 
@@ -92,7 +93,6 @@ public class WxApiImpl implements WxApi {
 	public void send() {
 		try {
 			String info = createInfo();
-			System.out.println("info: "+info);
 			if (info == null || info.length() == 0) {
 				return;
 			}
@@ -100,7 +100,7 @@ public class WxApiImpl implements WxApi {
 			params.add(new BasicNameValuePair("token", wxToken));
 			params.add(new BasicNameValuePair("info", info));
 			HttpPost httpPost = new HttpPost(wxUrl);
-			UrlEncodedFormEntity urlEncodedFormEntity = new UrlEncodedFormEntity(params, GlobalConfiguration.CODING);
+			UrlEncodedFormEntity urlEncodedFormEntity = new UrlEncodedFormEntity(params, wxCoding);
 			httpPost.setEntity(urlEncodedFormEntity);
 			String result = HttpRequestBaseDeal.executeHttpRequestBase(httpPost, wxTimeout);
 			if (result == null) {

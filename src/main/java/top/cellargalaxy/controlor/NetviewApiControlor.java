@@ -1,4 +1,4 @@
-package top.cellargalaxy.controlor.monitor;
+package top.cellargalaxy.controlor;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -7,7 +7,7 @@ import top.cellargalaxy.bean.monitor.Equipment;
 import top.cellargalaxy.bean.monitor.Malfunction;
 import top.cellargalaxy.bean.monitor.Place;
 import top.cellargalaxy.bean.serviceBean.Build;
-import top.cellargalaxy.service.monitor.MonitorService;
+import top.cellargalaxy.service.monitor.NetviewService;
 
 import java.util.LinkedList;
 
@@ -15,16 +15,16 @@ import java.util.LinkedList;
  * Created by cellargalaxy on 17-12-8.
  */
 @RestController
-@RequestMapping(MonitorApiControlor.MONITOR_API_CONTROLOR_URL)
-public class MonitorApiControlor {
-	public static final String MONITOR_API_CONTROLOR_URL = "/monitor/api";
+@RequestMapping(NetviewApiControlor.MONITOR_API_CONTROLOR_URL)
+public class NetviewApiControlor {
+	public static final String MONITOR_API_CONTROLOR_URL = "/api";
 	@Autowired
-	private MonitorService monitorService;
+	private NetviewService netviewService;
 	
 	@ResponseBody
 	@GetMapping("/inquireNetview")
 	public ReturnBean inquireNetview() {
-		LinkedList<Build> builds = monitorService.findNetview();
+		LinkedList<Build> builds = netviewService.findNetview();
 		if (builds != null) {
 			return new ReturnBean(true, builds);
 		} else {
@@ -36,7 +36,7 @@ public class MonitorApiControlor {
 	@ResponseBody
 	@GetMapping("/inquireEquipmentById")
 	public ReturnBean inquireEquipmentById(String id) {
-		Equipment equipment = monitorService.findEquipmentById(id);
+		Equipment equipment = netviewService.findEquipmentById(id);
 		if (equipment != null) {
 			return new ReturnBean(true, equipment);
 		} else {
@@ -47,7 +47,7 @@ public class MonitorApiControlor {
 	@ResponseBody
 	@GetMapping("/inquireAllEquipment")
 	public ReturnBean inquireAllEquipment() {
-		LinkedList<Build> builds = monitorService.findAllEquipment();
+		LinkedList<Build> builds = netviewService.findAllEquipment();
 		if (builds != null) {
 			return new ReturnBean(true, builds);
 		} else {
@@ -59,7 +59,7 @@ public class MonitorApiControlor {
 	@ResponseBody
 	@GetMapping("/inquireAllPlace")
 	public ReturnBean inquirePlaceByArea() {
-		Place[] places = monitorService.findAllPlace();
+		Place[] places = netviewService.findAllPlace();
 		if (places != null) {
 			return new ReturnBean(true, places);
 		} else {
@@ -71,7 +71,7 @@ public class MonitorApiControlor {
 	@ResponseBody
 	@GetMapping("/inquireMalfunctions")
 	public ReturnBean inquireMalfunctions(int page) {
-		Malfunction[] malfunctions = monitorService.findMalfunctions(page);
+		Malfunction[] malfunctions = netviewService.findMalfunctions(page);
 		if (malfunctions != null) {
 			return new ReturnBean(true, malfunctions);
 		} else {
@@ -82,6 +82,6 @@ public class MonitorApiControlor {
 	@ResponseBody
 	@GetMapping("/inquireMalfunctionPageCount")
 	public ReturnBean inquireMalfunctionPageCount() {
-		return new ReturnBean(true, monitorService.getMalfunctionPageCount());
+		return new ReturnBean(true, netviewService.getMalfunctionPageCount());
 	}
 }

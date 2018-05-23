@@ -2,7 +2,6 @@ package top.cellargalaxy.util;
 
 import org.slf4j.Logger;
 import top.cellargalaxy.bean.personnel.Person;
-import top.cellargalaxy.controlor.ControlorUtil;
 
 import javax.servlet.http.HttpSession;
 

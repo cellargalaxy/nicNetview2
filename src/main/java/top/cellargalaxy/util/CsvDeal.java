@@ -4,7 +4,6 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.stereotype.Component;
-import top.cellargalaxy.configuration.GlobalConfiguration;
 
 import java.io.*;
 import java.text.DateFormat;
@@ -21,7 +20,7 @@ public class CsvDeal {
 	 */
 	public static final String DATE_FORMAT_STRING = "yyyy/MM/dd";
 	private static final DateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT_STRING);
-	private static final String coding = GlobalConfiguration.CODING;
+	private static final String coding = "UTF-8";
 	private static final CSVFormat csvFormat = CSVFormat.DEFAULT.withRecordSeparator("\n");
 
 	public static final Iterable<CSVRecord> createCSVRecords(File file) {

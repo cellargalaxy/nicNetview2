@@ -181,7 +181,7 @@ function loginPersonnel(id, password) {
         error: ajaxErrorDeal,
         success: function (data) {
             if (data.result) {
-                location.href = getRootUrl() + '/monitor/page/listNetview';
+                location.href = getRootUrl() + '/page/listNetview';
             } else {
                 alert(data.data);
             }
